@@ -1,4 +1,4 @@
-import { RoastRecord } from '../types';
+import { RoastRecord } from '../types/types';
 
 export const LOADING_PHRASES = [
   "Laughing at your serif font choices...",

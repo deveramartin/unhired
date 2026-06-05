@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { User } from "@/types/types";
 import { History, LogOut, UploadCloud, UserCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,7 @@ interface NavbarProps {
 
 export default function Navbar({ user, logout, children }: NavbarProps) {
   const router = useRouter();
+  const [showConfirm, setShowConfirm] = useState(false);
 
   return (
     <div>
@@ -98,14 +99,36 @@ export default function Navbar({ user, logout, children }: NavbarProps) {
                     className="h-8 w-8 rounded-full border border-white/10 object-cover bg-zinc-900"
                   />
                 )}
-                <button
-                  id="logout-btn"
-                  title="Sign Out"
-                  onClick={logout}
-                  className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-white/5 rounded-lg transition-colors"
-                >
-                  <LogOut className="h-4 w-4" />
-                </button>
+                {!showConfirm ? (
+                  <button
+                    id="logout-btn"
+                    title="Sign Out"
+                    onClick={() => setShowConfirm(true)}
+                    className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                ) : (
+                  <div className="flex items-center space-x-1.5 bg-slate-900 border border-white/10 rounded-lg p-1 animate-fade-in">
+                    <span className="text-[10px] font-mono text-slate-400 px-1 select-none">
+                      Are you sure?
+                    </span>
+                    <button
+                      id="confirm-logout-btn"
+                      onClick={logout}
+                      className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500 hover:bg-rose-600 text-white transition-colors cursor-pointer"
+                    >
+                      Yes
+                    </button>
+                    <button
+                      id="cancel-logout-btn"
+                      onClick={() => setShowConfirm(false)}
+                      className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-white/5 hover:bg-white/10 text-slate-300 transition-colors cursor-pointer"
+                    >
+                      No
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div></div>
