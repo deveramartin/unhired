@@ -10,8 +10,8 @@ interface RoastPageProps {
 
 export default function RoastPage({ 
   user = {
-    name: "John Doe",
-    avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=dev",
+    // name?: "John Doe",
+    image: "https://api.dicebear.com/7.x/pixel-art/svg?seed=dev",
     email: "john.doe@example.com"
   }, 
   onRoastCompleted = () => {} 

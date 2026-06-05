@@ -1,21 +1,9 @@
-'use client';
-
 import LandingView from '@/components/LandingView';
-import { ViewType } from '@/types/types';
+import { GetCurrentUser } from '@/services/auth.service';
 
-interface PageProps {
-  setView?: (view: ViewType) => void;
-  isLoggedIn?: boolean;
-}
+export default async function Home() {
+  const res = await GetCurrentUser();
+  const isLoggedIn = !!res?.data?.user;
 
-export default function Home({ 
-  setView = () => {}, 
-  isLoggedIn = true 
-}: PageProps) {
-  return (
-    <LandingView 
-      setView={setView} 
-      isLoggedIn={isLoggedIn} 
-    />
-  );
+  return <LandingView isLoggedIn={isLoggedIn} />;
 }

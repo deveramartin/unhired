@@ -1,23 +1,24 @@
-"use client";
-
-import { useState } from "react";
+import { GetCurrentUser, SignOut } from "@/services/auth.service";
+import { redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
-import { ViewType } from "@/types";
+import { ReactNode } from "react";
 
-export default function NavProvider({
+export default async function NavProvider({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
-  const [view, setView] = useState<ViewType>("landing");
+  const res = await GetCurrentUser();
+  const user = res?.data?.user ?? null;
+
+  async function logout() {
+    "use server";
+    await SignOut();
+    redirect("/login");
+  }
 
   return (
-    <Navbar
-      currentView={view}
-      setView={setView}
-      user={null}
-      logout={() => {}}
-    >
+    <Navbar user={user} logout={logout}>
       {children}
     </Navbar>
   );

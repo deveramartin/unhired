@@ -1,11 +1,23 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+
+export async function GetCurrentUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error) {
+    return { success: false, message: error.message };
+  }
+
+  return { success: true, data: { user } };
+}
 
 export async function SignInWithGoogle() {
   const supabase = await createClient();
-
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
@@ -21,9 +33,16 @@ export async function SignInWithGoogle() {
     return { success: false, message: error.message };
   }
 
-  if (data?.url) {
-    redirect(data.url);
+  return { success: true, url: data?.url };
+}
+
+export async function SignOut() {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    return { success: false, message: error.message };
   }
 
-  return { success: false, message: "Failed to generate OAuth url" };
+  return { success: true };
 }

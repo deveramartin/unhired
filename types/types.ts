@@ -1,7 +1,7 @@
 export interface User {
-  name: string;
-  email: string;
-  avatarUrl: string;
+  // name: string;
+  email?: string;
+  image?: string;
 }
 
 export type ViewType = 'landing' | 'login' | 'roast' | 'history';
