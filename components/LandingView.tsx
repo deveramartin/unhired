@@ -1,6 +1,6 @@
 'use client';
 
-import { ViewType } from '../types';
+import { ViewType } from '@/types/types';
 import { ChevronRight, FileText, Flame, ShieldAlert, Sparkles, Volume2, HelpCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 

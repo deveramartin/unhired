@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import LoginView from "@/components/LoginView";
-import { User } from "@/types";
+import { User } from "@/types/types";
 
 export default function LoginPage() {
   const router = useRouter();

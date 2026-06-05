@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import { ViewType, User } from "../types";
+import { ViewType, User } from "@/types/types";
 import { Flame, History, LogOut, UploadCloud, UserCircle } from "lucide-react";
 
 interface NavbarProps {

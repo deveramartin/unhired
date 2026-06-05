@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { RoastRecord, User } from '../types';
+import { RoastRecord, User } from '@/types/types';
 import { LOADING_PHRASES, generateRoastFromUpload } from '../utils/roasts';
 import { 
   Upload, FileText, ArrowRight, Play, Pause, RefreshCw, AlertCircle, 

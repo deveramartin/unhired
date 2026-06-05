@@ -1,7 +1,7 @@
 'use client';
 
 import RoastView from "@/components/RoastView";
-import { User, RoastRecord } from "@/types";
+import { User, RoastRecord } from "@/types/types";
 
 interface RoastPageProps {
   user?: User;

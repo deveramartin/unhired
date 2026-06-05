@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { RoastRecord } from '../types';
+import { RoastRecord } from '@/types/types';
 import { 
   History, Search, Volume2, Calendar, FileText, Trash2, 
   ThumbsDown, Sparkles, Play, Pause, Frown, ShieldAlert 

@@ -1,6 +1,6 @@
 'use client';
 
-import { User } from '../types';
+import { User } from '@/types/types';
 import { ShieldAlert, Sparkles, Star } from 'lucide-react';
 
 interface LoginViewProps {

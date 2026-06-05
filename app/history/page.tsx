@@ -1,6 +1,6 @@
-import HistoryView from '../../components/HistoryView';
-import { RoastRecord } from '../../types';
-import { INITIAL_HISTORY } from '../../utils/roasts';
+import HistoryView from '@/components/HistoryView';
+import { RoastRecord } from '@/types/types';
+import { INITIAL_HISTORY } from '@/utils/roasts';
 
 interface HistoryPageProps {
   historyList?: RoastRecord[];
