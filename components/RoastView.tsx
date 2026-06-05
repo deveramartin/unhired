@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { RoastRecord, User } from "@/types/types";
-import { LOADING_PHRASES, generateRoastFromUpload } from "../utils/roasts";
+import { RoastRecord } from "@/types/types";
+import { User } from "@/db/schema";
+import { LOADING_PHRASES } from "../utils/roasts";
 import UploadPhase from "@/ui/UploadPhase";
 import LoadingPhase from "@/ui/LoadingPhase";
 import ScoreCard from "@/ui/ScoreCard";
@@ -21,13 +22,10 @@ export default function RoastView({ user }: RoastViewProps) {
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [currentRoast, setCurrentRoast] = useState<RoastRecord | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackProgress, setPlaybackProgress] = useState(0);
-  const [playSpeed, setPlaySpeed] = useState<number>(1);
-  const [cynicismLevel, setCynicismLevel] = useState<number>(85);
+  const [error, setError] = useState<string | null>(null);
 
-  const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
   const progressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const fetchAbortRef = useRef<AbortController | null>(null);
 
   // Rotate loading phrases
   useEffect(() => {
@@ -38,113 +36,101 @@ export default function RoastView({ user }: RoastViewProps) {
     return () => clearInterval(t);
   }, [phase]);
 
-  // Animate loading progress bar and transition to result
+  // Animate progress bar while waiting for Gemini
   useEffect(() => {
     if (phase !== "loading") return;
     setLoadingProgress(0);
-    const t = setInterval(() => {
-      setLoadingProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(t);
-          setTimeout(() => {
-            const fileName = selectedFile ? selectedFile.name : "My_Pathetic_Resume.pdf";
-            const targetRole = selectedRole === "auto" ? undefined : selectedRole;
-            setCurrentRoast(generateRoastFromUpload(fileName, targetRole));
-            setPhase("result");
-            setIsPlaying(false);
-            setPlaybackProgress(0);
-          }, 300);
-          return 100;
-        }
-        return Math.min(prev + Math.floor(Math.random() * 12) + 4, 100);
-      });
-    }, 120);
-    return () => clearInterval(t);
-  }, [phase, selectedFile, selectedRole]);
 
-  // Playback progress simulation
-  useEffect(() => {
-    if (isPlaying) {
-      progressTimerRef.current = setInterval(() => {
-        setPlaybackProgress((prev) => {
-          if (prev >= 100) {
-            setIsPlaying(false);
-            clearInterval(progressTimerRef.current!);
-            return 100;
-          }
-          return prev + 1 * playSpeed;
+    // Fake progress up to 90% — the last 10% completes when API responds
+    progressTimerRef.current = setInterval(() => {
+      setLoadingProgress((prev) => {
+        if (prev >= 90) {
+          clearInterval(progressTimerRef.current!);
+          return 90;
+        }
+        return Math.min(prev + Math.floor(Math.random() * 8) + 2, 90);
+      });
+    }, 300);
+
+    return () => {
+      if (progressTimerRef.current) clearInterval(progressTimerRef.current);
+    };
+  }, [phase]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile) return;
+
+    setError(null);
+    setPhase("loading");
+
+    fetchAbortRef.current = new AbortController();
+
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      if (selectedRole !== "auto") formData.append("role", selectedRole);
+
+      const res = await fetch("/api/roast", {
+        method: "POST",
+        body: formData,
+        signal: fetchAbortRef.current.signal,
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(json.error ?? "Failed to analyze CV");
+      }
+
+      // Complete the progress bar
+      if (progressTimerRef.current) clearInterval(progressTimerRef.current);
+      setLoadingProgress(100);
+
+      setTimeout(() => {
+        setCurrentRoast({
+          id: crypto.randomUUID(),
+          date: json.data.date,
+          fileName: json.data.fileName,
+          fileSize: json.data.fileSize,
+          parsedName: json.data.parsedName,
+          role: json.data.role,
+          roastText: json.data.roastText,
+          rating: json.data.rating,
+          buzzwords: json.data.buzzwords,
+          grammarSins: json.data.grammarSins,
         });
-      }, 150);
-    } else {
+        setPhase("result");
+      }, 400);
+    } catch (err: any) {
+      if (err.name === "AbortError") return;
+      setError(err.message ?? "Something went wrong");
+      setPhase("upload");
       if (progressTimerRef.current) clearInterval(progressTimerRef.current);
     }
-    return () => { if (progressTimerRef.current) clearInterval(progressTimerRef.current); };
-  }, [isPlaying, playSpeed]);
-
-  // Cancel speech on unmount
-  useEffect(() => {
-    return () => { window.speechSynthesis?.cancel(); };
-  }, []);
-
-  const stopSpeaking = () => {
-    window.speechSynthesis?.cancel();
-    setIsPlaying(false);
   };
 
-  const handleTogglePlay = () => {
-    if (!currentRoast || !window.speechSynthesis) return;
-
-    if (isPlaying) {
-      stopSpeaking();
-      return;
-    }
-
-    window.speechSynthesis.cancel();
-    const cleanText = currentRoast.roastText
-      .replace(/[#*`🚨]/g, "")
-      .replace(/Translation:/gi, "What that actually implies:");
-
-    const utterance = new SpeechSynthesisUtterance(
-      `Subject Profile: ${currentRoast.parsedName}. Assigned Profession of Disappointment: ${currentRoast.role}. Rated Self Esteem Level is ${currentRoast.rating} out of 10. Let the incineration begin. . . . ${cleanText}`
-    );
-    utterance.rate = playSpeed;
-    utterance.pitch = Math.min(Math.max((cynicismLevel / 100) * 1.5 + 0.3, 0.5), 2.0);
-    utterance.onend = () => { setIsPlaying(false); setPlaybackProgress(100); };
-    utterance.onerror = () => setIsPlaying(false);
-
-    speechRef.current = utterance;
-    setIsPlaying(true);
-    setPlaybackProgress(0);
-    window.speechSynthesis.speak(utterance);
-  };
-
-  const handleSpeedChange = (speed: number) => {
-    setPlaySpeed(speed);
-    if (isPlaying) stopSpeaking();
-  };
-
-  const handleCynicismChange = (level: number) => {
-    setCynicismLevel(level);
-    if (isPlaying) stopSpeaking();
-  };
-
-  const handleSaveToArchives = () => {
+  const handleSaveToArchives = async () => {
     if (!currentRoast) return;
     try {
-      const existing = JSON.parse(localStorage.getItem("unhired_roast_history") || "[]");
-      localStorage.setItem("unhired_roast_history", JSON.stringify([currentRoast, ...existing]));
-      alert("Dignity Loss documented! This roast was successfully appended to your Past Sufferings archives.");
+      const res = await fetch("/api/roast/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(currentRoast),
+      });
+      if (!res.ok) throw new Error();
+      alert("Dignity Loss documented! Roast saved to your archives.");
     } catch {
-      alert("Failed to save roast. Your browser storage may be full.");
+      alert("Failed to save roast.");
     }
   };
 
   const handleRestart = () => {
-    stopSpeaking();
+    fetchAbortRef.current?.abort();
     setSelectedFile(null);
     setSelectedRole("auto");
     setCurrentRoast(null);
-    setPlaybackProgress(0);
+    setError(null);
     setPhase("upload");
   };
 
@@ -155,13 +141,20 @@ export default function RoastView({ user }: RoastViewProps) {
 
       <div className="max-w-4xl mx-auto w-full relative">
         {phase === "upload" && (
-          <UploadPhase
-            selectedFile={selectedFile}
-            selectedRole={selectedRole}
-            onFileChange={setSelectedFile}
-            onRoleChange={setSelectedRole}
-            onSubmit={(e) => { e.preventDefault(); if (selectedFile) setPhase("loading"); }}
-          />
+          <>
+            {error && (
+              <div className="mb-6 px-4 py-3 bg-rose-500/10 border border-rose-500/25 rounded-xl text-rose-400 font-mono text-xs text-center">
+                {error}
+              </div>
+            )}
+            <UploadPhase
+              selectedFile={selectedFile}
+              selectedRole={selectedRole}
+              onFileChange={setSelectedFile}
+              onRoleChange={setSelectedRole}
+              onSubmit={handleSubmit}
+            />
+          </>
         )}
 
         {phase === "loading" && (
@@ -176,13 +169,10 @@ export default function RoastView({ user }: RoastViewProps) {
             <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
               <ScoreCard roast={currentRoast} />
               <AudioConsole
-                isPlaying={isPlaying}
-                playbackProgress={playbackProgress}
-                playSpeed={playSpeed}
-                cynicismLevel={cynicismLevel}
-                onTogglePlay={handleTogglePlay}
-                onSpeedChange={handleSpeedChange}
-                onCynicismChange={handleCynicismChange}
+                roastText={currentRoast.roastText}
+                parsedName={currentRoast.parsedName}
+                role={currentRoast.role}
+                rating={currentRoast.rating}
               />
             </div>
 
