@@ -84,15 +84,15 @@ export default function Navbar({ user, logout, children }: NavbarProps) {
               <div className="flex items-center space-x-3">
                 <div className="hidden md:block text-right">
                   <span className="block text-xs font-mono font-bold text-white leading-3">
-                    {user.email?.toLowerCase()}
+                    {user.name}
                   </span>
                   <span className="text-[10px] font-mono text-slate-500">
-                    Target Candidate
+                    {user.email?.toLowerCase()}
                   </span>
                 </div>
-                {user.image && (
+                {user && (
                   <img
-                    src={user.image}
+                    src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y"
                     alt={user.email ?? "User avatar"}
                     referrerPolicy="no-referrer"
                     className="h-8 w-8 rounded-full border border-white/10 object-cover bg-zinc-900"

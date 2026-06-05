@@ -1,25 +1,13 @@
-'use client';
-
 import RoastView from "@/components/RoastView";
-import { User, RoastRecord } from "@/types/types";
+import { GetCurrentUser } from "@/services/auth.service";
+import { redirect } from "next/navigation";
 
-interface RoastPageProps {
-  user?: User;
-  onRoastCompleted?: (record: RoastRecord) => void;
-}
+export default async function RoastPage() {
+  const res = await GetCurrentUser();
 
-export default function RoastPage({ 
-  user = {
-    // name?: "John Doe",
-    image: "https://api.dicebear.com/7.x/pixel-art/svg?seed=dev",
-    email: "john.doe@example.com"
-  }, 
-  onRoastCompleted = () => {} 
-}: RoastPageProps) {
-  return (
-    <RoastView 
-      user={user} 
-      onRoastCompleted={onRoastCompleted} 
-    />
-  );
+  if (!res?.data?.user) {
+    redirect("/login");
+  }
+
+  return <RoastView user={res.data.user} />;
 }

@@ -1,16 +1,30 @@
 "use server";
 
+"use server";
+
 import { createClient } from "@/lib/supabase/server";
+import { db } from "@/db/client";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function GetCurrentUser() {
   const supabase = await createClient();
+
   const {
-    data: { user },
+    data: { user: authUser },
     error,
   } = await supabase.auth.getUser();
 
-  if (error) {
-    return { success: false, message: error.message };
+  if (error || !authUser) {
+    return { success: false, message: error?.message ?? "Not authenticated" };
+  }
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, authUser.id),
+  });
+
+  if (!user) {
+    return { success: false, message: "User not found in database" };
   }
 
   return { success: true, data: { user } };
