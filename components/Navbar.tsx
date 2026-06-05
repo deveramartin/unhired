@@ -108,14 +108,7 @@ export default function Navbar({ user, logout, children }: NavbarProps) {
                 </button>
               </div>
             ) : (
-              <button
-                id="login-icon-btn"
-                onClick={() => router.push("/login")}
-                className="flex items-center space-x-1.5 py-1.5 px-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-all text-xs font-mono"
-              >
-                <UserCircle className="h-4 w-4 text-emerald-500" />
-                <span className="hidden sm:inline">Recruiter Portal</span>
-              </button>
+              <div></div>
             )}
           </div>
         </div>

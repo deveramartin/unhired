@@ -57,7 +57,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Logged in, trying to access login page → send to app
-  if (user && path.startsWith("/login")) {
+  if (user && isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/roast";
     return NextResponse.redirect(url);
