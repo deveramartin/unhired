@@ -1,3 +1,5 @@
+"use client";
+
 import HistoryView from '@/components/HistoryView';
 import { RoastRecord } from '@/types/types';
 import { INITIAL_HISTORY } from '@/utils/roasts';
