@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Unhired — Roast & History Web App
 
-## Getting Started
+Unhired is a small Next.js application for creating and viewing "roasts" and browsing roast history. It integrates with Supabase for persistence, Drizzle for database migrations, and multiple AI/voice services (Google GenAI, Gemini, TTS) for generation and audio playback.
 
-First, run the development server:
+**Features**
+- **Create roasts:** interactive UI for generating roast text and audio.
+- **History:** persist and browse past roasts.
+- **Auth:** sign-in flow and callbacks for provider integrations.
+- **TTS & audio playback:** generate speech from roast text.
+
+**Tech stack**
+- **Framework:** Next.js (app router)
+- **DB / ORM:** Postgres + Drizzle ORM / drizzle-kit
+- **Auth / Realtime / Storage:** Supabase
+- **AI / TTS:** Google GenAI / Gemini / Vapi (see `package.json` dependencies)
+- **Styling:** Tailwind CSS
+
+**Repository layout (high level)**
+- `app/`: Next.js routes and pages (`/login`, `/history`, `/roast`, API routes under `app/api`)
+- `components/`: React UI components (`LandingView`, `RoastView`, `HistoryView`, etc.)
+- `services/`: business logic and API wrappers (`auth.service.ts`, `roast.service.ts`, `history.service.ts`, `gemini.service.ts`)
+- `supabase/` and `db/`: Supabase helpers, migrations, and DB client schema
+- `lib/tts`: text-to-speech helpers
+- `utils/`: helper utilities (markdown, roast generation helpers)
+
+## Getting started — local development
+
+1. Install dependencies
+
+```bash
+npm install
+```
+
+2. Create a `.env.local` file at project root and set the required environment variables (example below).
+
+3. (Optional) Run database migrations. This project includes `drizzle-kit` and Supabase migrations under `supabase/migrations`.
+
+```bash
+# Example, adjust for your setup
+npx drizzle-kit push --url "$DATABASE_URL"
+# or apply Supabase SQL migrations via the Supabase CLI
+```
+
+4. Start the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
+Create `.env.local` with at least the following placeholders (names may vary depending on your deployment):
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `NEXT_PUBLIC_SUPABASE_URL` — your Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (server-side only)
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon key (client-side)
+- `GOOGLE_API_KEY` or `GOOGLE_GENAI_KEY` — for Google GenAI / Gemini usage
+- `OPENAI_API_KEY` — if using OpenAI endpoints (if applicable)
 
-## Learn More
+Add any other keys used by `lib/gemini`, `lib/supabase`, or `lib/tts`.
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
+- **Dev:** `npm run dev` — starts Next.js dev server
+- **Build:** `npm run build` — build for production
+- **Start:** `npm run start` — start production server
+- **Lint:** `npm run lint` — run ESLint
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+These scripts are defined in `package.json`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Database & migrations
+- Migrations are under `supabase/migrations` and can be applied with Supabase CLI or `drizzle-kit` depending on your workflow.
+- The project uses `drizzle-orm` for typed queries and schema definitions in `db/schema.ts`.
 
-## Deploy on Vercel
+## Deployment
+- This app targets Vercel for seamless Next.js deployments, but any platform supporting Node.js can host it. Ensure environment variables are set in your deployment target (Vercel, Fly, Render, etc.).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Troubleshooting
+- If API keys or Supabase credentials are missing, auth and data features will fail — check the browser console and server logs.
+- Use `supabase` CLI to inspect your database and apply migrations.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Contributing
+- Open issues or PRs for bug fixes and improvements. Keep changes focused and include tests when possible.
+
+---
+If you'd like, I can also:
+- add a sample `.env.example` file,
+- add a `README` section that documents each API route under `app/api`, or
+- run the app locally and verify the routes.
+
