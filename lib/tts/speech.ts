@@ -1,15 +1,23 @@
+import Vapi from "@vapi-ai/web";
+
+const vapi = new Vapi(process.env.NEXT_PUBLIC_VAPI_API_KEY!);
+
 export async function speech(text: string): Promise<void> {
-  const res = await fetch("/api/tts", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
+  return new Promise((resolve, reject) => {
+    vapi.start(process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID!, {
+      firstMessage: text,
+    });
+
+    vapi.on("speech-end", () => {
+      vapi.stop();
+      resolve();
+    });
+
+    vapi.on("call-end", () => resolve());
+
+    vapi.on("error", (err) => {
+      vapi.stop();
+      reject(err);
+    });
   });
-
-  if (!res.ok) throw new Error("TTS failed");
-
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const audio = new Audio(url);
-  audio.onended = () => URL.revokeObjectURL(url);
-  audio.play();
 }

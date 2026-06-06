@@ -110,9 +110,9 @@ export default function RoastView({ user }: RoastViewProps) {
         saveRoast(roast);
 
         // Auto-play TTS
-        // speech(roast.roastText).catch((err) =>
-        // console.error("TTS error:", err),
-        // );
+        speech(roast.roastText).catch((err) =>
+          console.error("TTS error:", err),
+        );
       }, 400);
     } catch (err: any) {
       if (err.name === "AbortError") return;
