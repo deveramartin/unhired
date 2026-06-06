@@ -81,10 +81,3 @@ These scripts are defined in `package.json`.
 
 ## Contributing
 - Open issues or PRs for bug fixes and improvements. Keep changes focused and include tests when possible.
-
----
-If you'd like, I can also:
-- add a sample `.env.example` file,
-- add a `README` section that documents each API route under `app/api`, or
-- run the app locally and verify the routes.
-
