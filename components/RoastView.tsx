@@ -139,6 +139,7 @@ export default function RoastView({ user }: RoastViewProps) {
       <div className="absolute top-[10%] right-[5%] w-80 h-80 bg-emerald-950/20 rounded-full blur-[110px] pointer-events-none" />
       <div className="absolute bottom-[10%] left-[5%] w-72 h-72 bg-emerald-950/10 rounded-full blur-[90px] pointer-events-none" />
 
+      {/* Uploading */}
       <div className="max-w-4xl mx-auto w-full relative">
         {phase === "upload" && (
           <>
@@ -157,6 +158,7 @@ export default function RoastView({ user }: RoastViewProps) {
           </>
         )}
 
+        {/* Loading */}
         {phase === "loading" && (
           <LoadingPhase
             loadingPhraseIndex={loadingPhraseIndex}
@@ -164,20 +166,18 @@ export default function RoastView({ user }: RoastViewProps) {
           />
         )}
 
+        {/* Result */}
         {phase === "result" && currentRoast && (
-          <div className="space-y-8 animate-fade-in">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
-              <ScoreCard roast={currentRoast} />
-              <AudioConsole
-                roastText={currentRoast.roastText}
-                parsedName={currentRoast.parsedName}
-                role={currentRoast.role}
-                rating={currentRoast.rating}
-              />
+          <div className="md:space-y-8 gap-6 animate-fade-in grid grid-cols-1 md:grid-cols-5">
+            <div className="space-y-5 w-full flex flex-col md:col-span-2">
+              <div className="h-fit">
+                <ScoreCard roast={currentRoast} />
+              </div>
+              <div className="flex-1">
+                <BuzzwordsCard roast={currentRoast} />
+              </div>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-              <BuzzwordsCard roast={currentRoast} />
+            <div className="grid md:col-span-3">
               <RoastTextCard
                 roast={currentRoast}
                 onSave={handleSaveToArchives}

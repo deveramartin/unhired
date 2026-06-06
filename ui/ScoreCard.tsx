@@ -10,7 +10,7 @@ interface ScoreCardProps {
 
 export default function ScoreCard({ roast }: ScoreCardProps) {
   return (
-    <div className="md:col-span-4 bg-zinc-900 border border-white/5 rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden text-center space-y-4 shadow-[0_4px_24px_rgba(0,0,0,0.3)]">
+    <div className=" border border-white md:col-span-2 bg-zinc-900 border border-white/5 rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden text-center space-y-4 shadow-[0_4px_24px_rgba(0,0,0,0.3)]">
       <div className="absolute -top-10 -right-10 w-28 h-28 bg-emerald-950/15 rounded-full blur-2xl pointer-events-none" />
 
       <span className="font-mono text-[9px] text-slate-500 tracking-widest uppercase block">

@@ -11,14 +11,6 @@ interface UploadPhaseProps {
   onSubmit: (e: React.FormEvent) => void;
 }
 
-const ROLES = [
-  { id: "auto", label: "🤖 Auto Parse" },
-  { id: "swe", label: "💻 Software Eng." },
-  { id: "pm", label: "📅 Product Mgr." },
-  { id: "junior", label: "👶 Junior Dev." },
-  { id: "designer", label: "🎨 UI Designer" },
-];
-
 export default function UploadPhase({
   selectedFile,
   selectedRole,
@@ -28,6 +20,8 @@ export default function UploadPhase({
 }: UploadPhaseProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = React.useState(false);
+  const [isAuto, setIsAuto] = React.useState(false);
+  const [customRole, setCustomRole] = React.useState("");
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -55,6 +49,20 @@ export default function UploadPhase({
     } else {
       alert("We only roast PDF files. Standard corporate rejection standard.");
     }
+  };
+
+  // Sync custom role up to parent whenever it changes
+  const handleCustomRoleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setCustomRole(val);
+    setIsAuto(false);
+    onRoleChange(val);
+  };
+
+  const handleAutoClick = () => {
+    setIsAuto(true);
+    setCustomRole("");
+    onRoleChange("auto");
   };
 
   return (
@@ -145,25 +153,42 @@ export default function UploadPhase({
           </label>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-          {ROLES.map((role) => (
-            <button
-              key={role.id}
-              type="button"
-              id={`role-btn-${role.id}`}
-              onClick={() => onRoleChange(role.id)}
-              className={`p-2.5 text-xs font-mono rounded-xl border text-center transition-all cursor-pointer ${
-                selectedRole === role.id
-                  ? "bg-emerald-500/10 border-emerald-500 text-emerald-400 font-bold shadow-[0_0_15px_rgba(16,185,129,0.1)]"
-                  : "bg-slate-950 border-white/5 text-slate-400 hover:text-white hover:border-white/10"
-              }`}
-            >
-              {role.label}
-            </button>
-          ))}
+        {/* Auto button + text input side by side */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <button
+            id="auto"
+            type="button"
+            onClick={handleAutoClick}
+            className={`shrink-0 px-4 py-2.5 text-xs font-mono rounded-xl border text-center transition-all cursor-pointer ${
+              isAuto
+                ? "bg-emerald-500/10 border-emerald-500 text-emerald-400 font-bold shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+                : "bg-slate-950 border-white/5 text-slate-400 hover:text-white hover:border-white/10"
+            }`}
+          >
+            🤖 Auto Parse
+          </button>
+
+          {/* Divider */}
+          <span className="hidden sm:block text-slate-600 font-mono text-xs self-center">or</span>
+
+          {/* Custom role / industry input */}
+          <input
+            type="text"
+            id="custom-role-input"
+            value={customRole}
+            onChange={handleCustomRoleChange}
+            onClick={(e) => e.stopPropagation()}
+            placeholder="e.g. Senior Frontend Engineer, Fintech PM, UX Designer..."
+            className={`flex-1 bg-slate-950 border rounded-xl px-4 py-2.5 text-xs font-mono text-slate-200 placeholder-slate-600 outline-none transition-all ${
+              !isAuto && customRole
+                ? "border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.08)] text-emerald-300"
+                : "border-white/5 focus:border-emerald-500/50 focus:shadow-[0_0_10px_rgba(16,185,129,0.06)]"
+            }`}
+          />
         </div>
+
         <p className="text-[10px] text-slate-500 font-mono mt-1 text-left">
-          * Select a role above to override automatic PDF parsing with our tailored job category roasting engines!
+          * Type a specific role or industry to get a targeted roast, or use Auto Parse to let the AI decide.
         </p>
       </div>
 
