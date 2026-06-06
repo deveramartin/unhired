@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { RoastRecord } from "@/types/types";
+import { RoastRecord } from "@/db/schema";
 import {
   History,
   Search,
@@ -11,57 +11,38 @@ import {
   ThumbsDown,
   Pause,
   Frown,
-  ShieldAlert,
+  Loader2,
 } from "lucide-react";
-
-const STORAGE_KEY = "unhired_roast_history";
-
-function loadHistory(): RoastRecord[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveHistory(records: RoastRecord[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-}
 
 export default function HistoryView() {
   const [historyList, setHistoryList] = useState<RoastRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSpeechId, setActiveSpeechId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-  // Load from localStorage on mount
+  // Fetch from Supabase on mount
   useEffect(() => {
-    setHistoryList(loadHistory());
-  }, []);
-
-  // Cancel speech on unmount
-  useEffect(() => {
-    return () => {
-      window.speechSynthesis?.cancel();
+    const fetchHistory = async () => {
+      try {
+        const res = await fetch("/api/roast/history");
+        if (!res.ok) throw new Error("Failed to fetch history");
+        const json = await res.json();
+        setHistoryList(json.data ?? []);
+      } catch (err: any) {
+        setError(err.message ?? "Something went wrong");
+      } finally {
+        setLoading(false);
+      }
     };
+
+    fetchHistory();
   }, []);
 
-  const handleRemoveRecord = (id: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this archive permanently? This will not restore your self-esteem, but will hide your file.",
-      )
-    )
-      return;
-    if (activeSpeechId === id) {
-      window.speechSynthesis?.cancel();
-      setActiveSpeechId(null);
-    }
-    const updated = historyList.filter((r) => r.id !== id);
-    setHistoryList(updated);
-    saveHistory(updated);
-  };
+  useEffect(() => {
+    return () => window.speechSynthesis?.cancel();
+  }, []);
 
   const handleToggleSpeech = (record: RoastRecord) => {
     if (!window.speechSynthesis) return;
@@ -74,9 +55,7 @@ export default function HistoryView() {
 
     window.speechSynthesis.cancel();
 
-    const cleanLabel = record.roastText
-      .replace(/[#*`🚨]/g, "")
-      .substring(0, 450);
+    const cleanLabel = record.roastText.replace(/[#*`🚨]/g, "").substring(0, 450);
     const text = `Replaying Roast diagnostic for ${record.parsedName}. Profession: ${record.role}. Score rating ${record.rating} out of 10. . . ${cleanLabel}`;
 
     const utterance = new SpeechSynthesisUtterance(text);
@@ -137,8 +116,23 @@ export default function HistoryView() {
           />
         </div>
 
+        {/* Loading */}
+        {loading && (
+          <div className="flex items-center justify-center py-20 gap-3 text-slate-500 font-mono text-xs">
+            <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
+            <span>Retrieving dignity loss records...</span>
+          </div>
+        )}
+
+        {/* Error */}
+        {!loading && error && (
+          <div className="px-4 py-3 bg-rose-500/10 border border-rose-500/25 rounded-xl text-rose-400 font-mono text-xs text-center">
+            {error}
+          </div>
+        )}
+
         {/* History List */}
-        {filteredHistory.length > 0 ? (
+        {!loading && !error && filteredHistory.length > 0 && (
           <div className="grid grid-cols-1 gap-5">
             {filteredHistory.map((record) => {
               const speakIsPlaying = activeSpeechId === record.id;
@@ -164,12 +158,10 @@ export default function HistoryView() {
                           {record.parsedName}
                         </span>
                         <span className="px-2 py-0.5 text-[8px] font-mono font-bold uppercase rounded bg-slate-950 text-slate-400 border border-white/5">
-                          {record.fileName.endsWith(".pdf") ? "PDF" : "DOC"}
+                          PDF
                         </span>
                       </div>
-                      <p className="font-mono text-xs text-slate-400">
-                        {record.role}
-                      </p>
+                      <p className="font-mono text-xs text-slate-400">{record.role}</p>
                     </div>
 
                     <div className="flex items-center space-x-3 self-end sm:self-center">
@@ -178,34 +170,18 @@ export default function HistoryView() {
                         <span>Score:</span>
                         <span className="font-bold">{record.rating}</span>
                       </div>
-                      <button
-                        type="button"
-                        id={`delete-record-${record.id}`}
-                        onClick={() => handleRemoveRecord(record.id)}
-                        className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-slate-950 border border-transparent hover:border-white/5 rounded-lg transition-all cursor-pointer"
-                        title="Delete record"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
                     </div>
                   </div>
 
                   {/* Snippet */}
                   <div className="text-left font-sans text-xs text-slate-400 leading-relaxed italic pr-2">
-                    "
-                    {bodySnippet.length > 200
-                      ? `${bodySnippet.substring(0, 200)}...`
-                      : bodySnippet}
-                    "
+                    "{bodySnippet.length > 200 ? `${bodySnippet.substring(0, 200)}...` : bodySnippet}"
                   </div>
 
                   {/* Buzzwords */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {record.buzzwords.slice(0, 3).map((bw, i) => (
-                      <span
-                        key={i}
-                        className="px-2 py-0.5 font-mono text-[9px] bg-slate-950 text-emerald-400 border border-white/5 rounded-md"
-                      >
+                      <span key={i} className="px-2 py-0.5 font-mono text-[9px] bg-slate-950 text-emerald-400 border border-white/5 rounded-md">
                         ⚠️ {bw}
                       </span>
                     ))}
@@ -220,11 +196,10 @@ export default function HistoryView() {
                   <div className="flex items-center justify-between pt-3 border-t border-white/5 font-mono text-[10px]">
                     <span className="text-slate-500 flex items-center gap-1">
                       <Calendar className="h-3 w-3 text-emerald-500" />
-                      <span>{record.date}</span>
+                      <span>{new Date(record.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</span>
                     </span>
                     <button
                       type="button"
-                      id={`replay-btn-${record.id}`}
                       onClick={() => handleToggleSpeech(record)}
                       className={`px-3 py-1.5 uppercase font-mono tracking-wider font-extrabold rounded-lg flex items-center gap-1.5 transition-all text-[10px] cursor-pointer ${
                         speakIsPlaying
@@ -233,15 +208,9 @@ export default function HistoryView() {
                       }`}
                     >
                       {speakIsPlaying ? (
-                        <>
-                          <Pause className="h-3.5 w-3.5" />
-                          <span>Mute Record</span>
-                        </>
+                        <><Pause className="h-3.5 w-3.5" /><span>Mute Record</span></>
                       ) : (
-                        <>
-                          <Volume2 className="h-3.5 w-3.5" />
-                          <span>Replay Roast Voice</span>
-                        </>
+                        <><Volume2 className="h-3.5 w-3.5" /><span>Replay Roast Voice</span></>
                       )}
                     </button>
                   </div>
@@ -249,33 +218,22 @@ export default function HistoryView() {
               );
             })}
           </div>
-        ) : (
+        )}
+
+        {/* Empty state */}
+        {!loading && !error && filteredHistory.length === 0 && (
           <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-12 text-center space-y-4">
             <div className="mx-auto w-12 h-12 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-center">
               <Frown className="h-6 w-6 text-zinc-600" />
             </div>
             <div className="space-y-1.5 max-w-sm mx-auto select-none">
-              <h3 className="font-mono text-sm font-bold text-white">
-                Dignity Archives Empty
-              </h3>
+              <h3 className="font-mono text-sm font-bold text-white">Dignity Archives Empty</h3>
               <p className="text-xs text-zinc-500 font-sans leading-relaxed">
-                Wow, your record feed is clean. Either you possess flawless
-                credentials, or you're too terrified to experience our AI's
-                assessment.
+                Wow, your record feed is clean. Either you possess flawless credentials, or you're too terrified to experience our AI's assessment.
               </p>
             </div>
           </div>
         )}
-
-        {/* TODO: swap localStorage for Supabase when DB is ready */}
-        <div className="bg-amber-950/15 border border-amber-900/30 p-4 rounded-xl flex items-start gap-3">
-          <ShieldAlert className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5 animate-pulse" />
-          <p className="text-[10px] sm:text-xs text-amber-400 font-mono leading-relaxed text-left">
-            <strong>System Notice:</strong> History is currently stored in your
-            browser. Setting up Supabase will enable cloud persistence across
-            devices and sessions.
-          </p>
-        </div>
       </div>
     </div>
   );

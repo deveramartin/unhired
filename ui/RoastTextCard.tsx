@@ -7,11 +7,10 @@ import { renderParsedMarkdown } from "../utils/markdown";
 
 interface RoastTextCardProps {
   roast: RoastRecord;
-  onSave: () => void;
   onRestart: () => void;
 }
 
-export default function RoastTextCard({ roast, onSave, onRestart }: RoastTextCardProps) {
+export default function RoastTextCard({ roast, onRestart }: RoastTextCardProps) {
   return (
     <div className="md:col-span-2 bg-zinc-900 border border-white/5 rounded-3xl p-6 sm:p-8 space-y-6 shadow-md">
       <div className="flex items-center justify-between pb-3 border-b border-white/5">
@@ -25,16 +24,6 @@ export default function RoastTextCard({ roast, onSave, onRestart }: RoastTextCar
       {renderParsedMarkdown(roast.roastText)}
 
       <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <button
-          type="button"
-          id="save-archives-btn"
-          onClick={onSave}
-          className="w-full sm:w-auto px-5 py-2.5 bg-slate-950 hover:bg-slate-900 border border-white/10 rounded-xl text-xs font-mono font-bold text-slate-200 hover:text-white flex items-center justify-center space-x-1.5 transition-all cursor-pointer"
-        >
-          <Save className="h-3.5 w-3.5 text-emerald-400" />
-          <span>Document Dignity Loss</span>
-        </button>
-
         <button
           type="button"
           id="roast-another-btn"

@@ -51,19 +51,21 @@ export default function UploadPhase({
     }
   };
 
-  // Sync custom role up to parent whenever it changes
   const handleCustomRoleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setCustomRole(val);
-    setIsAuto(false);
+    if (isAuto) setIsAuto(false);
     onRoleChange(val);
   };
 
   const handleAutoClick = () => {
-    setIsAuto(true);
-    setCustomRole("");
+    setIsAuto(!isAuto);
+    setCustomRole("");    
     onRoleChange("auto");
   };
+
+  const roleSelected = isAuto || customRole.trim().length > 0;
+  const canSubmit = selectedFile != null && roleSelected;
 
   return (
     <form onSubmit={onSubmit} className="space-y-8">
@@ -153,13 +155,13 @@ export default function UploadPhase({
           </label>
         </div>
 
-        {/* Auto button + text input side by side */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <button
             id="auto"
             type="button"
             onClick={handleAutoClick}
-            className={`shrink-0 px-4 py-2.5 text-xs font-mono rounded-xl border text-center transition-all cursor-pointer ${
+            disabled={customRole.trim().length > 0}
+            className={`shrink-0 px-4 py-2.5 text-xs font-mono rounded-xl border text-center transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
               isAuto
                 ? "bg-emerald-500/10 border-emerald-500 text-emerald-400 font-bold shadow-[0_0_15px_rgba(16,185,129,0.1)]"
                 : "bg-slate-950 border-white/5 text-slate-400 hover:text-white hover:border-white/10"
@@ -168,18 +170,17 @@ export default function UploadPhase({
             🤖 Auto Parse
           </button>
 
-          {/* Divider */}
           <span className="hidden sm:block text-slate-600 font-mono text-xs self-center">or</span>
 
-          {/* Custom role / industry input */}
           <input
             type="text"
             id="custom-role-input"
             value={customRole}
             onChange={handleCustomRoleChange}
             onClick={(e) => e.stopPropagation()}
+            disabled={isAuto}
             placeholder="e.g. Senior Frontend Engineer, Fintech PM, UX Designer..."
-            className={`flex-1 bg-slate-950 border rounded-xl px-4 py-2.5 text-xs font-mono text-slate-200 placeholder-slate-600 outline-none transition-all ${
+            className={`flex-1 bg-slate-950 border rounded-xl px-4 py-2.5 text-xs font-mono text-slate-200 placeholder-slate-600 outline-none transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
               !isAuto && customRole
                 ? "border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.08)] text-emerald-300"
                 : "border-white/5 focus:border-emerald-500/50 focus:shadow-[0_0_10px_rgba(16,185,129,0.06)]"
@@ -188,7 +189,7 @@ export default function UploadPhase({
         </div>
 
         <p className="text-[10px] text-slate-500 font-mono mt-1 text-left">
-          * Type a specific role or industry to get a targeted roast, or use Auto Parse to let the AI decide.
+          * Pick Auto Parse or type a role — selecting one disables the other.
         </p>
       </div>
 
@@ -197,9 +198,9 @@ export default function UploadPhase({
         <button
           type="submit"
           id="start-roast-btn"
-          disabled={!selectedFile}
+          disabled={!canSubmit}
           className={`group relative w-full sm:w-auto px-10 py-3.5 font-mono font-bold uppercase text-xs tracking-widest rounded-xl transition-all duration-300 flex items-center justify-center space-x-2.5 ${
-            selectedFile
+            canSubmit
               ? "bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-[1.02] cursor-pointer font-extrabold"
               : "bg-zinc-900 border border-white/5 text-slate-600 cursor-not-allowed"
           }`}

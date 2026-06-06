@@ -1,62 +1,54 @@
+import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 
-const ELEVENLABS_API_KEY = process.env.NEXT_PRIVATE_ELEVENLABS_API_KEY;
-const VOICE_ID = process.env.NEXT_PUBLIC_VOICE_ID;
+const elevenlabs = new ElevenLabsClient({
+  apiKey: process.env.ELEVENLABS_API_KEY,
+});
 
 export async function POST(req: NextRequest) {
-  // Auth check
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  try {
+    const { text } = await req.json();
+    if (!text)
+      return NextResponse.json({ error: "No text provided" }, { status: 400 });
 
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  if (!ELEVENLABS_API_KEY || !VOICE_ID) {
-    return NextResponse.json({ error: "TTS not configured" }, { status: 500 });
-  }
-
-  const { text } = await req.json();
-
-  if (!text || typeof text !== "string") {
-    return NextResponse.json({ error: "No text provided" }, { status: 400 });
-  }
-
-  const response = await fetch(
-    `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
-    {
-      method: "POST",
-      headers: {
-        "xi-api-key": ELEVENLABS_API_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    const audioStream = await elevenlabs.textToSpeech.convert(
+      process.env.VOICE_ID!,
+      {
         text,
-        model_id: "eleven_turbo_v2",
-        voice_settings: {
-          stability: 0.4,
-          similarity_boost: 0.75,
-          style: 0.6,
-          use_speaker_boost: true,
-        },
-      }),
+        modelId: "eleven_v3",
+        outputFormat: "mp3_44100_128",
+      },
+    );
+
+    const reader = audioStream.getReader();
+    const chunks: Uint8Array[] = [];
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
     }
-  );
+    const audioBuffer = Buffer.from(
+      chunks.reduce((acc, chunk) => {
+        const merged = new Uint8Array(acc.length + chunk.length);
+        merged.set(acc);
+        merged.set(chunk, acc.length);
+        return merged;
+      }, new Uint8Array(0)),
+    );
 
-  if (!response.ok) {
-    const err = await response.text();
-    console.error("ElevenLabs error:", err);
-    return NextResponse.json({ error: "TTS generation failed" }, { status: 500 });
+    return new NextResponse(audioBuffer, {
+      status: 200,
+      headers: {
+        "Content-Type": "audio/mpeg",
+        "Content-Length": audioBuffer.byteLength.toString(),
+      },
+    });
+  } catch (err: any) {
+    console.error("ElevenLabs TTS error:", err);
+    const message = err?.body?.detail?.message ?? err?.message ?? "TTS failed";
+    return NextResponse.json(
+      { error: message },
+      { status: err?.statusCode ?? 500 },
+    );
   }
-
-  // Stream the audio back directly
-  const audioBuffer = await response.arrayBuffer();
-
-  return new NextResponse(audioBuffer, {
-    headers: {
-      "Content-Type": "audio/mpeg",
-      "Content-Length": audioBuffer.byteLength.toString(),
-    },
-  });
 }

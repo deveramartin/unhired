@@ -7,9 +7,9 @@ import { LOADING_PHRASES } from "../utils/roasts";
 import UploadPhase from "@/ui/UploadPhase";
 import LoadingPhase from "@/ui/LoadingPhase";
 import ScoreCard from "@/ui/ScoreCard";
-import AudioConsole from "@/ui/AudioConsole";
 import BuzzwordsCard from "@/ui/BuzzwordCard";
 import RoastTextCard from "@/ui/RoastTextCard";
+import { speech } from "@/lib/tts/speech";
 
 interface RoastViewProps {
   user: User;
@@ -27,7 +27,6 @@ export default function RoastView({ user }: RoastViewProps) {
   const progressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const fetchAbortRef = useRef<AbortController | null>(null);
 
-  // Rotate loading phrases
   useEffect(() => {
     if (phase !== "loading") return;
     const t = setInterval(() => {
@@ -36,12 +35,9 @@ export default function RoastView({ user }: RoastViewProps) {
     return () => clearInterval(t);
   }, [phase]);
 
-  // Animate progress bar while waiting for Gemini
   useEffect(() => {
     if (phase !== "loading") return;
     setLoadingProgress(0);
-
-    // Fake progress up to 90% — the last 10% completes when API responds
     progressTimerRef.current = setInterval(() => {
       setLoadingProgress((prev) => {
         if (prev >= 90) {
@@ -51,11 +47,23 @@ export default function RoastView({ user }: RoastViewProps) {
         return Math.min(prev + Math.floor(Math.random() * 8) + 2, 90);
       });
     }, 300);
-
     return () => {
       if (progressTimerRef.current) clearInterval(progressTimerRef.current);
     };
   }, [phase]);
+
+  const saveRoast = async (roast: RoastRecord) => {
+    try {
+      const res = await fetch("/api/roast/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(roast),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      console.error("Auto-save failed");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +71,6 @@ export default function RoastView({ user }: RoastViewProps) {
 
     setError(null);
     setPhase("loading");
-
     fetchAbortRef.current = new AbortController();
 
     try {
@@ -78,17 +85,13 @@ export default function RoastView({ user }: RoastViewProps) {
       });
 
       const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Failed to analyze CV");
 
-      if (!res.ok) {
-        throw new Error(json.error ?? "Failed to analyze CV");
-      }
-
-      // Complete the progress bar
       if (progressTimerRef.current) clearInterval(progressTimerRef.current);
       setLoadingProgress(100);
 
       setTimeout(() => {
-        setCurrentRoast({
+        const roast: RoastRecord = {
           id: crypto.randomUUID(),
           date: json.data.date,
           fileName: json.data.fileName,
@@ -99,29 +102,23 @@ export default function RoastView({ user }: RoastViewProps) {
           rating: json.data.rating,
           buzzwords: json.data.buzzwords,
           grammarSins: json.data.grammarSins,
-        });
+        };
+
+        setCurrentRoast(roast);
         setPhase("result");
+
+        saveRoast(roast);
+
+        // Auto-play TTS
+        // speech(roast.roastText).catch((err) =>
+        // console.error("TTS error:", err),
+        // );
       }, 400);
     } catch (err: any) {
       if (err.name === "AbortError") return;
       setError(err.message ?? "Something went wrong");
       setPhase("upload");
       if (progressTimerRef.current) clearInterval(progressTimerRef.current);
-    }
-  };
-
-  const handleSaveToArchives = async () => {
-    if (!currentRoast) return;
-    try {
-      const res = await fetch("/api/roast/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(currentRoast),
-      });
-      if (!res.ok) throw new Error();
-      alert("Dignity Loss documented! Roast saved to your archives.");
-    } catch {
-      alert("Failed to save roast.");
     }
   };
 
@@ -139,7 +136,6 @@ export default function RoastView({ user }: RoastViewProps) {
       <div className="absolute top-[10%] right-[5%] w-80 h-80 bg-emerald-950/20 rounded-full blur-[110px] pointer-events-none" />
       <div className="absolute bottom-[10%] left-[5%] w-72 h-72 bg-emerald-950/10 rounded-full blur-[90px] pointer-events-none" />
 
-      {/* Uploading */}
       <div className="max-w-4xl mx-auto w-full relative">
         {phase === "upload" && (
           <>
@@ -158,7 +154,6 @@ export default function RoastView({ user }: RoastViewProps) {
           </>
         )}
 
-        {/* Loading */}
         {phase === "loading" && (
           <LoadingPhase
             loadingPhraseIndex={loadingPhraseIndex}
@@ -166,7 +161,6 @@ export default function RoastView({ user }: RoastViewProps) {
           />
         )}
 
-        {/* Result */}
         {phase === "result" && currentRoast && (
           <div className="md:space-y-8 gap-6 animate-fade-in grid grid-cols-1 md:grid-cols-5">
             <div className="space-y-5 w-full flex flex-col md:col-span-2">
@@ -178,11 +172,7 @@ export default function RoastView({ user }: RoastViewProps) {
               </div>
             </div>
             <div className="grid md:col-span-3">
-              <RoastTextCard
-                roast={currentRoast}
-                onSave={handleSaveToArchives}
-                onRestart={handleRestart}
-              />
+              <RoastTextCard roast={currentRoast} onRestart={handleRestart} />
             </div>
           </div>
         )}
