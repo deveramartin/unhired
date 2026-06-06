@@ -1,4 +1,4 @@
-# Unhired — Roast & History Web App
+# Unhired — AI Resume Roaster
 
 Unhired is a small Next.js application for creating and viewing "roasts" and browsing roast history. It integrates with Supabase for persistence, Drizzle for database migrations, and multiple AI/voice services (Google GenAI, Gemini, TTS) for generation and audio playback.
 
